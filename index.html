@@ -1,0 +1,855 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LED Matrix Hybrid (595 X & Direct Pin Y) Code Builder</title>
+    <style>
+        :root {
+            --bg-color: #121214;
+            --panel-bg: #1e1e24;
+            --border-color: #2f2f37;
+            --text-color: #e2e8f0;
+            --text-muted: #94a3b8;
+            --accent-color: #3b82f6;
+            --accent-hover: #2563eb;
+            --led-off: #334155;
+            --led-on: #ef4444; 
+            --success-color: #10b981;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        header {
+            background-color: var(--panel-bg);
+            padding: 1rem 2rem;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        header h1 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
+
+        header h1 span {
+            color: var(--led-on);
+        }
+
+        .badge {
+            background: #2d3748;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            border: 1px solid var(--border-color);
+        }
+
+        .main-container {
+            display: grid;
+            grid-template-columns: 320px 1fr 450px;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        @media (max-width: 1200px) {
+            .main-container {
+                grid-template-columns: 300px 1fr;
+                grid-template-rows: auto;
+            }
+            .code-panel {
+                grid-column: span 2;
+                height: 500px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .main-container {
+                grid-template-columns: 1fr;
+            }
+            .sidebar, .canvas-panel, .code-panel {
+                grid-column: span 1;
+            }
+        }
+
+        .panel {
+            background-color: var(--panel-bg);
+            border-right: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+        }
+
+        .panel-header {
+            padding: 1.25rem;
+            border-bottom: 1px solid var(--border-color);
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 0.85rem;
+            letter-spacing: 1px;
+            color: var(--text-muted);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-shrink: 0;
+        }
+
+        .panel-body {
+            padding: 1.25rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1.25rem;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .form-group-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: #17171c;
+            padding: 0.4rem 0.8rem;
+            border-radius: 6px;
+            border: 1px solid var(--border-color);
+        }
+
+        label {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+        }
+
+        input[type="number"], input[type="text"] {
+            background-color: #0f0f11;
+            border: 1px solid var(--border-color);
+            color: var(--text-color);
+            padding: 0.6rem;
+            border-radius: 6px;
+            font-size: 0.95rem;
+            transition: border-color 0.2s;
+        }
+
+        .pin-input {
+            width: 60px;
+            padding: 0.3rem !important;
+            text-align: center;
+            font-weight: bold;
+            color: var(--accent-color) !important;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: var(--accent-color);
+        }
+
+        .info-box {
+            background-color: rgba(59, 130, 246, 0.1);
+            border: 1px solid rgba(59, 130, 246, 0.3);
+            border-radius: 6px;
+            padding: 0.75rem;
+            font-size: 0.85rem;
+            line-height: 1.4;
+        }
+
+        .pin-container {
+            display: flex;
+            flex-direction: column;
+            gap: 0.4rem;
+            max-height: 200px;
+            overflow-y: auto;
+            padding-right: 5px;
+        }
+
+        /* Styling scrollbar untuk container pin */
+        .pin-container::-webkit-scrollbar {
+            width: 6px;
+        }
+        .pin-container::-webkit-scrollbar-track {
+            background: #17171c; 
+            border-radius: 4px;
+        }
+        .pin-container::-webkit-scrollbar-thumb {
+            background: #3f3f46; 
+            border-radius: 4px;
+        }
+
+        .btn {
+            background-color: var(--accent-color);
+            color: white;
+            border: none;
+            padding: 0.6rem 1rem;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 500;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            transition: background 0.2s;
+        }
+
+        .btn:hover {
+            background-color: var(--accent-hover);
+        }
+
+        .btn-secondary {
+            background-color: #2d3748;
+            border: 1px solid var(--border-color);
+        }
+
+        .btn-secondary:hover {
+            background-color: #3a475c;
+        }
+
+        .btn-danger {
+            background-color: #dc2626;
+        }
+        .btn-danger:hover {
+            background-color: #b91c1c;
+        }
+
+        .btn-group {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.5rem;
+        }
+
+        .canvas-panel {
+            background-color: #141417;
+            border-right: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 2rem;
+            overflow: auto;
+        }
+
+        .canvas-toolbar {
+            width: 100%;
+            max-width: 600px;
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 1.5rem;
+            background: var(--panel-bg);
+            padding: 0.75rem;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+        }
+
+        .matrix-outer-container {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: 100%;
+        }
+
+        .matrix-grid {
+            display: grid;
+            gap: 6px;
+            background-color: var(--panel-bg);
+            padding: 1.5rem;
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            box-shadow: 0 10px 25px -5px rgba(0,0,0,0.3);
+            user-select: none;
+            min-width: 100px;
+            min-height: 100px;
+        }
+
+        .led {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background-color: var(--led-off);
+            cursor: pointer;
+            transition: background-color 0.15s, box-shadow 0.15s;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.4);
+        }
+
+        .led.active {
+            background-color: var(--led-on);
+            box-shadow: 0 0 10px var(--led-on), inset 0 1px 2px rgba(255,255,255,0.4);
+        }
+
+        .timeline-container {
+            width: 100%;
+            max-width: 600px;
+            margin-top: 1.5rem;
+            background: var(--panel-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 1rem;
+        }
+
+        .frame-status {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin-bottom: 0.75rem;
+        }
+
+        .code-panel {
+            border-right: none;
+        }
+
+        .code-container {
+            flex: 1;
+            position: relative;
+            margin: 1.25rem;
+            background-color: #0f0f11;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .code-header {
+            background-color: #17171c;
+            padding: 0.5rem 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        pre {
+            margin: 0;
+            padding: 1rem;
+            overflow: auto;
+            flex: 1;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 0.85rem;
+            line-height: 1.5;
+            color: #a7b5ca;
+            white-space: pre-wrap;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1><span>●</span> LED Matrix Sketch Builder </h1>
+        <div class="badge">Hybrid Mode v1.3 (Dynamic Pins Fixed)</div>
+    </header>
+
+    <div class="main-container">
+        
+        <div class="panel sidebar">
+            <div class="panel-header">Konfigurasi Hardware</div>
+            <div class="panel-body">
+                
+                <div class="form-group">
+                    <label for="input-cols">Jumlah Kolom X (Shift Register)</label>
+                    <input type="number" id="input-cols" value="8" min="1" max="64">
+                </div>
+
+                <div class="form-group">
+                    <label for="input-rows">Jumlah Baris Y (Pin Langsung)</label>
+                    <input type="number" id="input-rows" value="8" min="1" max="64">
+                </div>
+
+                <div class="info-box">
+                    <strong>Arsitektur Hybrid:</strong><br>
+                    <span id="ic-count-info">X: 1x IC 74HC595<br>Y: 8 Pin Arduino Langsung</span>
+                </div>
+
+                <hr style="border: 0; border-top: 1px solid var(--border-color);">
+                
+                <p style="font-size: 0.8rem; font-weight: bold; color: var(--accent-color);">KONEKSI PIN X (74HC595)</p>
+                <div class="form-group">
+                    <label for="pin-latch">Latch Pin (ST_CP)</label>
+                    <input type="text" id="pin-latch" value="10">
+                </div>
+                
+                <div class="form-group">
+                    <label for="pin-clock">Clock Pin (SH_CP)</label>
+                    <input type="text" id="pin-clock" value="11">
+                </div>
+
+                <div class="form-group">
+                    <label for="pin-data">Data Pin (DS)</label>
+                    <input type="text" id="pin-data" value="12">
+                </div>
+
+                <hr style="border: 0; border-top: 1px solid var(--border-color);">
+                <p style="font-size: 0.8rem; font-weight: bold; color: var(--accent-color);">KONEKSI PIN Y (DIRECT ARDUINO)</p>
+
+                <div class="form-group">
+                    <label>Tentukan Pin untuk Setiap Baris:</label>
+                    <div id="dynamic-pins-container" class="pin-container">
+                        </div>
+                </div>
+
+                <hr style="border: 0; border-top: 1px solid var(--border-color);">
+
+                <div class="form-group">
+                    <label for="frame-delay">Delay Animasi per Frame (ms)</label>
+                    <input type="number" id="frame-delay" value="200" min="20">
+                </div>
+
+            </div>
+        </div>
+
+        <div class="canvas-panel">
+            
+            <div class="canvas-toolbar">
+                <div class="btn-group" style="grid-template-columns: auto auto; gap: 0.5rem;">
+                    <button class="btn btn-secondary" id="btn-clear">Clear All</button>
+                    <button class="btn btn-secondary" id="btn-invert">Invert</button>
+                </div>
+            </div>
+
+            <div class="matrix-outer-container">
+                <div class="matrix-grid" id="led-matrix"></div>
+            </div>
+
+            <div class="timeline-container">
+                <div class="frame-status">
+                    <span id="frame-indicator">Frame: 1 / 1</span>
+                    <span id="play-status" style="color: #10b981; display:none;">● Playing</span>
+                </div>
+                <div style="display: flex; gap: 0.5rem; justify-content: space-between;">
+                    <div style="display: flex; gap: 0.5rem;">
+                        <button class="btn btn-secondary" id="btn-prev">◀ Prev</button>
+                        <button class="btn btn-secondary" id="btn-next">Next ▶</button>
+                    </div>
+                    <button class="btn" id="btn-add-frame">+ Add Frame</button>
+                    <button class="btn btn-secondary" id="btn-play" style="background-color: #1e3a8a;">Play</button>
+                    <button class="btn btn-danger" id="btn-del-frame">Delete</button>
+                </div>
+            </div>
+
+        </div>
+
+        <div class="panel code-panel">
+            <div class="panel-header">
+                Arduino Code Output (Hybrid)
+            </div>
+            <div class="code-container">
+                <div class="code-header">
+                    <span style="font-size: 0.8rem; color: var(--text-muted);">matrix_hybrid.ino</span>
+                    <button class="btn" id="btn-copy" style="padding: 0.3rem 0.7rem; font-size: 0.8rem;">Copy Code</button>
+                </div>
+                <pre><code id="code-output">Generating code...</code></pre>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            try {
+                // Variabel Global
+                let cols = 8;
+                let rows = 8;
+                let frames = [];
+                let currentFrameIndex = 0;
+                let isDrawing = false;
+                let drawMode = true; 
+                let playInterval = null;
+                
+                // Array untuk menyimpan konfigurasi Pin Y secara dinamis
+                let rowPinsConfig = [];
+
+                // DOM Elements
+                const matrixGrid = document.getElementById('led-matrix');
+                const inputCols = document.getElementById('input-cols');
+                const inputRows = document.getElementById('input-rows');
+                const icCountInfo = document.getElementById('ic-count-info');
+                const dynamicPinsContainer = document.getElementById('dynamic-pins-container');
+                const codeOutput = document.getElementById('code-output');
+                
+                const pinLatch = document.getElementById('pin-latch');
+                const pinClock = document.getElementById('pin-clock');
+                const pinData = document.getElementById('pin-data');
+                const frameDelay = document.getElementById('frame-delay');
+
+                // Inisialisasi Aplikasi (SUDAH DIPERBAIKI BUG-NYA)
+                function initApp() {
+                    let newCols = parseInt(inputCols.value) || 8;
+                    let newRows = parseInt(inputRows.value) || 8;
+                    
+                    // Update matrix data jika ukuran berubah ATAU frames masih kosong saat pertama load
+                    if(newCols !== cols || newRows !== rows || frames.length === 0) {
+                        cols = newCols;
+                        rows = newRows;
+                        frames = [createNewFrameBuffer(rows, cols)];
+                        currentFrameIndex = 0;
+                    }
+
+                    let icNeeded = Math.ceil(cols / 8);
+                    icCountInfo.innerHTML = "X: " + icNeeded + "x IC 74HC595 (Shift Register)<br>Y: " + rows + " Pin Arduino Langsung";
+
+                    // Mengatur logika penambahan/pengurangan array pin dinamis
+                    if (rowPinsConfig.length === 0) {
+                        // Jika kosong pertama kali, isi berurutan mulai pin 2
+                        for(let i = 0; i < rows; i++) rowPinsConfig.push(i + 2);
+                    } else if (rowPinsConfig.length < rows) {
+                        // Jika baris bertambah, lanjutkan angka pin terakhir
+                        let lastPin = parseInt(rowPinsConfig[rowPinsConfig.length - 1]) || 2;
+                        for(let i = rowPinsConfig.length; i < rows; i++) {
+                            lastPin++;
+                            rowPinsConfig.push(lastPin);
+                        }
+                    } else if (rowPinsConfig.length > rows) {
+                        // Jika baris berkurang, potong array-nya
+                        rowPinsConfig = rowPinsConfig.slice(0, rows);
+                    }
+
+                    renderDynamicPinInputs();
+                    renderMatrixUI();
+                    updateTimelineUI();
+                    generateArduinoCode();
+                }
+
+                // Fungsi Membuat UI Input Pin Dinamis
+                function renderDynamicPinInputs() {
+                    dynamicPinsContainer.innerHTML = '';
+                    
+                    for(let i = 0; i < rows; i++) {
+                        let rowDiv = document.createElement('div');
+                        rowDiv.className = 'form-group-row';
+                        
+                        let label = document.createElement('label');
+                        label.innerText = 'Baris ' + (i + 1);
+                        label.style.color = '#e2e8f0';
+                        
+                        let input = document.createElement('input');
+                        input.type = 'text';
+                        input.className = 'pin-input';
+                        input.value = rowPinsConfig[i];
+                        
+                        // Update kodingan saat pin diketik
+                        input.addEventListener('input', function() {
+                            rowPinsConfig[i] = this.value;
+                            generateArduinoCode();
+                        });
+
+                        rowDiv.appendChild(label);
+                        rowDiv.appendChild(input);
+                        dynamicPinsContainer.appendChild(rowDiv);
+                    }
+                }
+
+                function createNewFrameBuffer(r, c) {
+                    let frame = [];
+                    for(let i = 0; i < r; i++) {
+                        let rowArray = [];
+                        for(let j = 0; j < c; j++) {
+                            rowArray.push(0);
+                        }
+                        frame.push(rowArray);
+                    }
+                    return frame;
+                }
+
+                function renderMatrixUI() {
+                    matrixGrid.innerHTML = '';
+                    matrixGrid.style.gridTemplateColumns = "repeat(" + cols + ", 24px)";
+                    
+                    let currentFrame = frames[currentFrameIndex];
+
+                    for (let r = 0; r < rows; r++) {
+                        for (let c = 0; c < cols; c++) {
+                            let led = document.createElement('div');
+                            led.className = 'led';
+                            
+                            if (currentFrame[r] && currentFrame[r][c] === 1) {
+                                led.classList.add('active');
+                            }
+
+                            led.addEventListener('mousedown', function(e) {
+                                e.preventDefault();
+                                isDrawing = true;
+                                drawMode = !led.classList.contains('active');
+                                toggleLED(led, r, c, drawMode);
+                            });
+
+                            led.addEventListener('mouseenter', function() {
+                                if (isDrawing) {
+                                    toggleLED(led, r, c, drawMode);
+                                }
+                            });
+
+                            matrixGrid.appendChild(led);
+                        }
+                    }
+                }
+
+                function toggleLED(ledElement, r, c, state) {
+                    if (state) {
+                        ledElement.classList.add('active');
+                        frames[currentFrameIndex][r][c] = 1;
+                    } else {
+                        ledElement.classList.remove('active');
+                        frames[currentFrameIndex][r][c] = 0;
+                    }
+                    generateArduinoCode();
+                }
+
+                window.addEventListener('mouseup', function() {
+                    isDrawing = false;
+                });
+
+                matrixGrid.addEventListener('dragstart', function(e) {
+                    e.preventDefault();
+                });
+
+                // GENERATOR KODE ARDUINO METODE HYBRID
+                function generateArduinoCode() {
+                    let latch = pinLatch.value || "10";
+                    let clock = pinClock.value || "11";
+                    let data = pinData.value || "12";
+                    let delayTime = frameDelay.value || "200";
+                    
+                    let totalFrames = frames.length;
+                    let bytesPerRow = Math.ceil(cols / 8); 
+
+                    let code = "// Dibuat untuk sistem Hybrid: Kolom (X) = Shift Register, Baris (Y) = Pin Langsung\n\n";
+                    code += "#define LATCH_PIN " + latch + "\n";
+                    code += "#define CLOCK_PIN " + clock + "\n";
+                    code += "#define DATA_PIN  " + data + "\n\n";
+                    
+                    code += "const int MATRIX_ROWS = " + rows + ";\n";
+                    code += "const int MATRIX_COLS = " + cols + ";\n";
+                    code += "const int FRAMES_COUNT = " + totalFrames + ";\n";
+                    code += "const int BYTES_PER_ROW = " + bytesPerRow + ";\n\n";
+
+                    // Membaca dari array Pin Dinamis
+                    let safePins = rowPinsConfig.map(p => (p.toString().trim() === "" ? "?" : p));
+                    code += "const int ROW_PINS[MATRIX_ROWS] = {" + safePins.join(', ') + "};\n\n";
+
+                    // Data Progmembuffer animasi
+                    code += "const byte ANIMATION_DATA[FRAMES_COUNT][MATRIX_ROWS][BYTES_PER_ROW] PROGMEM = {\n";
+
+                    for (let fIdx = 0; fIdx < frames.length; fIdx++) {
+                        let frame = frames[fIdx];
+                        code += "  { // Frame " + (fIdx + 1) + "\n";
+                        
+                        for (let r = 0; r < rows; r++) {
+                            code += "    {";
+                            let rowBytes = [];
+                            
+                            for (let b = 0; b < bytesPerRow; b++) {
+                                let byteString = "";
+                                for (let bit = 0; bit < 8; bit++) {
+                                    let colIndex = b * 8 + bit;
+                                    if (colIndex < cols) {
+                                        byteString += frame[r][colIndex];
+                                    } else {
+                                        byteString += "0"; 
+                                    }
+                                }
+                                let hexNumber = parseInt(byteString, 2).toString(16).toUpperCase();
+                                if(hexNumber.length < 2) hexNumber = "0" + hexNumber;
+                                rowBytes.push("0x" + hexNumber);
+                            }
+                            
+                            code += rowBytes.join(', ');
+                            code += (r === rows - 1) ? "}\n" : "},\n";
+                        }
+                        code += (fIdx === totalFrames - 1) ? "  }\n" : "  },\n";
+                    }
+                    code += "};\n\n";
+
+                    code += "void setup() {\n";
+                    code += "  pinMode(LATCH_PIN, OUTPUT);\n";
+                    code += "  pinMode(CLOCK_PIN, OUTPUT);\n";
+                    code += "  pinMode(DATA_PIN, OUTPUT);\n\n";
+                    code += "  // Set semua Pin Baris Y sebagai OUTPUT\n";
+                    code += "  for (int i = 0; i < MATRIX_ROWS; i++) {\n";
+                    code += "    pinMode(ROW_PINS[i], OUTPUT);\n";
+                    code += "    digitalWrite(ROW_PINS[i], LOW); // Matikan semua baris di awal\n";
+                    code += "  }\n";
+                    code += "}\n\n";
+
+                    code += "void loop() {\n";
+                    code += "  for (int currentFrame = 0; currentFrame < FRAMES_COUNT; currentFrame++) {\n";
+                    code += "    unsigned long startTime = millis();\n\n";
+                    code += "    // Tampilkan frame aktif selama durasi delay tertentu\n";
+                    code += "    while (millis() - startTime < " + delayTime + ") {\n";
+                    code += "      for (int r = 0; r < MATRIX_ROWS; r++) {\n\n";
+                    code += "        // 1. Kirim data kolom ke Shift Register 74HC595\n";
+                    code += "        digitalWrite(LATCH_PIN, LOW);\n";
+                    code += "        for (int b = BYTES_PER_ROW - 1; b >= 0; b--) {\n";
+                    code += "          byte rowData = pgm_read_byte(&(ANIMATION_DATA[currentFrame][r][b]));\n";
+                    code += "          shiftOut(DATA_PIN, CLOCK_PIN, MSBFIRST, rowData);\n";
+                    code += "        }\n";
+                    code += "        digitalWrite(LATCH_PIN, HIGH);\n\n";
+                    code += "        // 2. Aktifkan Pin Baris Y saat ini secara langsung\n";
+                    code += "        // (Ubah HIGH ke LOW jika tipe LED Matrix kamu Common Anode/Cathode terbalik)\n";
+                    code += "        digitalWrite(ROW_PINS[r], HIGH); \n";
+                    code += "        delayMicroseconds(800); // Waktu tunda pencahayaan baris\n\n";
+                    code += "        // 3. Matikan kembali baris ini sebelum pindah ke baris berikutnya (Cegah Ghosting)\n";
+                    code += "        digitalWrite(ROW_PINS[r], LOW);\n";
+                    code += "      }\n";
+                    code += "    }\n";
+                    code += "  }\n";
+                    code += "}\n";
+
+                    codeOutput.innerText = code;
+                }
+
+                function updateTimelineUI() {
+                    document.getElementById('frame-indicator').innerText = "Frame: " + (currentFrameIndex + 1) + " / " + frames.length;
+                }
+
+                // CONTROLS ANIMASI
+                document.getElementById('btn-add-frame').addEventListener('click', function() {
+                    let currentPattern = frames[currentFrameIndex];
+                    let clonedPattern = [];
+                    for (let i = 0; i < rows; i++) {
+                        let newRow = [];
+                        for(let j = 0; j < cols; j++) {
+                            newRow.push(currentPattern[i][j]);
+                        }
+                        clonedPattern.push(newRow);
+                    }
+                    frames.splice(currentFrameIndex + 1, 0, clonedPattern);
+                    currentFrameIndex++;
+                    renderMatrixUI();
+                    updateTimelineUI();
+                    generateArduinoCode();
+                });
+
+                document.getElementById('btn-next').addEventListener('click', function() {
+                    if (currentFrameIndex < frames.length - 1) {
+                        currentFrameIndex++;
+                        renderMatrixUI();
+                        updateTimelineUI();
+                    }
+                });
+
+                document.getElementById('btn-prev').addEventListener('click', function() {
+                    if (currentFrameIndex > 0) {
+                        currentFrameIndex--;
+                        renderMatrixUI();
+                        updateTimelineUI();
+                    }
+                });
+
+                document.getElementById('btn-del-frame').addEventListener('click', function() {
+                    if (frames.length > 1) {
+                        frames.splice(currentFrameIndex, 1);
+                        if (currentFrameIndex >= frames.length) {
+                            currentFrameIndex = frames.length - 1;
+                        }
+                        renderMatrixUI();
+                        updateTimelineUI();
+                        generateArduinoCode();
+                    } else {
+                        alert("Minimal harus tersisa 1 Frame!");
+                    }
+                });
+
+                document.getElementById('btn-play').addEventListener('click', function() {
+                    let statusIndicator = document.getElementById('play-status');
+                    if (playInterval) {
+                        clearInterval(playInterval);
+                        playInterval = null;
+                        this.innerText = "Play";
+                        this.style.backgroundColor = "#1e3a8a";
+                        statusIndicator.style.display = "none";
+                    } else {
+                        this.innerText = "Pause";
+                        this.style.backgroundColor = "#ea580c";
+                        statusIndicator.style.display = "inline";
+                        let delay = parseInt(frameDelay.value) || 200;
+                        playInterval = setInterval(function() {
+                            currentFrameIndex = (currentFrameIndex + 1) % frames.length;
+                            renderMatrixUI();
+                            updateTimelineUI();
+                        }, delay);
+                    }
+                });
+
+                document.getElementById('btn-clear').addEventListener('click', function() {
+                    frames[currentFrameIndex] = createNewFrameBuffer(rows, cols);
+                    renderMatrixUI();
+                    generateArduinoCode();
+                });
+
+                document.getElementById('btn-invert').addEventListener('click', function() {
+                    for (let r = 0; r < rows; r++) {
+                        for (let c = 0; c < cols; c++) {
+                            frames[currentFrameIndex][r][c] = frames[currentFrameIndex][r][c] === 1 ? 0 : 1;
+                        }
+                    }
+                    renderMatrixUI();
+                    generateArduinoCode();
+                });
+
+                // Listener Input Update untuk Setting Panel
+                inputCols.addEventListener('change', initApp);
+                inputRows.addEventListener('change', initApp); 
+                pinLatch.addEventListener('input', generateArduinoCode);
+                pinClock.addEventListener('input', generateArduinoCode);
+                pinData.addEventListener('input', generateArduinoCode);
+                frameDelay.addEventListener('input', generateArduinoCode);
+
+                // Copy Clipboard Terproteksi Offline
+                document.getElementById('btn-copy').addEventListener('click', function() {
+                    let codeText = codeOutput.innerText;
+                    function successCopy() {
+                        let copyBtn = document.getElementById('btn-copy');
+                        copyBtn.innerText = "Copied!";
+                        copyBtn.style.backgroundColor = "#10b981"; 
+                        setTimeout(function() {
+                            copyBtn.innerText = "Copy Code";
+                            copyBtn.style.backgroundColor = "#3b82f6";
+                        }, 2000);
+                    }
+                    if (navigator.clipboard && window.isSecureContext) {
+                        navigator.clipboard.writeText(codeText).then(successCopy).catch(function(e) {
+                            alert("Gagal copy: " + e.message);
+                        });
+                    } else {
+                        let textArea = document.createElement("textarea");
+                        textArea.value = codeText;
+                        textArea.style.position = "fixed";
+                        textArea.style.left = "-999999px";
+                        document.body.appendChild(textArea);
+                        textArea.focus();
+                        textArea.select();
+                        try {
+                            document.execCommand('copy');
+                            successCopy();
+                        } catch (err) {
+                            alert("Gagal menyalin. Silakan block text manual di panel kanan lalu tekan Ctrl + C.");
+                        }
+                        textArea.remove();
+                    }
+                });
+
+                // Jalankan App pertama kali
+                initApp();
+
+            } catch (error) {
+                document.body.innerHTML = "<div style='color: white; background: #dc2626; padding: 2rem; margin: 2rem; border-radius: 10px; font-family: sans-serif;'><h2>⚠️ Terjadi Hambatan Sistem</h2><p>Detail Error:</p><pre style='background:#1a1a1a; padding:1rem; color:#ffb3b3; overflow-x:auto;'>" + error.stack + "</pre></div>";
+            }
+        });
+    </script>
+</body>
+</html>
